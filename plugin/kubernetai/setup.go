@@ -31,7 +31,8 @@ func setup(c *caddy.Controller) error {
 	}
 
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		k8i.Next = next
+		// Set Next of the last instance of Kubernetes
+		k8i.Kubernetes[len(k8i.Kubernetes)-1].Next = next
 		return k8i
 	})
 
@@ -55,11 +56,9 @@ func Parse(c *caddy.Controller) (*Kubernetai, error) {
 	}
 
 	for i := 0; i < len(k8i.Kubernetes); i++ {
-		// Copy Fallthough settings from the Kubernetes object
-		k8i.Fall = append(k8i.Fall, k8i.Kubernetes[i].Fall)
-		// for all but last instance, disable fallthrough in the Kubernetes object
+		// for all but last instance, set Next to the next Kubernetes instance
 		if i < len(k8i.Kubernetes)-1 {
-			k8i.Kubernetes[i].Fall.Zones = nil
+			k8i.Kubernetes[i].Next = k8i.Kubernetes[i+1]
 		}
 	}
 
